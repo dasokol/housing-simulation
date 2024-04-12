@@ -1,13 +1,14 @@
 """
 global vars and config parameters for simulation
 """
-
-
+# NOTES:
+# parameters containing the term "annual" as a substring means they'll be recalculated every year of the simulation
+# if a parameter has a corresponding <parameter>_growth_rate parameter, the latter determines future values of the former
 CONFIG = {
     # these are fixed and not drawn at random
     "fixed_parameters": {
         # number of monte carlo simulations to run
-        "n_simulations": 1000,
+        "n_simulations": 3,
         # simulate n years into future
         "n_years": 10,
         # fraction paid down on home purchase
@@ -28,7 +29,7 @@ CONFIG = {
         # from google calculator on https://www.google.com/search?q=mortgage+rate+average
         # for 800+ credit score in va with 20% down and 600k loan amount 15-yr fixed, assuming 0 points; 04/04/24
         "mean": 0.06459,
-        # it's hard to say what this is, and it tends to vary, but i chose value from
+        # it's hard to say what this is, and it tends to vary, but I chose value from
         # https://www.freddiemac.com/research/insight/20230216-when-rates-are-higher-borrowers-who-shop-around-save
         "std_dev": 0.0040,
     },
@@ -39,7 +40,7 @@ CONFIG = {
         "std_dev": 50000,
     },
 
-    "inflation": {
+    "annual_inflation": {
         # https://www.gurufocus.com/market/us-inflation-contributors
         "mean": 0.0239,
         "std_dev": 0.0123,
@@ -47,22 +48,22 @@ CONFIG = {
     },
 
     # stock market performance, simulates opportunity cost of buying (ie you could put all this money into market instead of a property)
-    "market_return": {
+    "annual_market_return": {
         # http://www.moneychimp.com/articles/volatility/standard_deviation.htm#:~:text=an%20s%26p%20500%20index%20fund,interest%20at%20a%20guaranteed%20rate.
         "mean": 0.09,
         "std_dev": 0.15,
     },
 
     # housing market performance, simulates what you might be able to sell property for
-    "housing_return": {
+    "annual_housing_return": {
         # surprisingly hard to find already-calculated data on this, just guessing it
         "mean": 0.038,
-        "std_dev": 0.03,
+        "std_dev": 0.05,
     },
     
-    # cost of owning a house, which encompasses things like hoa (assuming it's a condo), insurance, taxes, etc
+    # cost of owning a house, which encompasses things like hoa (assuming it's a condo), insurance, taxes, repairs, etc
     "annual_housing_cost": {
-        "mean": 17000,
+        "mean": 17500,
         "std_dev": 1500,
     },
     # TODO should we add housing cost growth? i think taxes don't go up until property is sold, but insurance and hoa could rise
@@ -73,16 +74,21 @@ CONFIG = {
         # 2 bedroom cost in arlington
         "mean": 3095*12,
         "std_dev": 175*12,
-        # just good guesses; assumes you stay in each place for a few years (with price increases from landlord) and move to a cheaper place when it gets too expensive
-        "growth_rate_mean": 0.06,
-        "growth_rate_std_dev": 0.03,
     },
 
-    # represents costs involved with moving between rentals
+    "annual_rent_cost_growth_rate": {
+        # just good guesses; assumes you stay in each place for a few years (with price increases from landlord) and move to a cheaper place when it gets too expensive
+        "mean": 0.06,
+        "std_dev": 0.03,
+    },
+
+    # amortized params don't happen every year in real life, but we amortize them so we can apply them each year in the simulation for simplicity
+    # represents costs involved with moving between rentals, assuming you move roughly every 3-4 years
     "amortized_annual_moving_cost": {
         "mean": 400,
         "std_dev": 100,
     },
+    
     # represents concessions from moving; does not capture rent price drop, as that is calculated based on expected rent cost growth
     "amortized_annual_moving_savings": {
         "mean": 1000,
