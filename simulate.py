@@ -14,7 +14,8 @@ def generate_params():
     these are generated based on random things like drawing from normal distributions using parameters that make sense
     returns dict with values
     """
-    mortgage_rate = random.gauss(
+    
+    mortgage_rate = random.gauss()
     
 def run_simulation():
     """
