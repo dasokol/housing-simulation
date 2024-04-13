@@ -1,6 +1,10 @@
 """
 global vars and config parameters for simulation
 """
+# constant vals
+MONTHS_PER_YEAR = 12.0
+
+
 # NOTES:
 # parameters containing the term "annual" as a substring means they'll be recalculated every year of the simulation
 # if a parameter has a corresponding <parameter>_growth_rate parameter, the latter determines future values of the former
@@ -9,11 +13,14 @@ CONFIG = {
     "fixed_parameters": {
         # number of monte carlo simulations to run
         "n_simulations": 1,
-        # simulate n years into future
-        "n_years": 10,
+        # simulate n years into future; at end of simulation, we liquidate all assets and compare results of own vs rent
+        "n_years": 1,
         # fraction paid down on home purchase
         "down_payment": 0.2,
         "loan_term_years": 15,
+        # TODO implement income calculations
+        # ratio of mortgage principal and interest (not including taxes or insurance) to gross, pre-tax income
+        "mortgage_to_income_ratio": 0.25,
         # if set, then the simulations assume you've shopped around for a better-than-average mortgage rate
         # specifically, it sets the mortgage rate mean to be 1 std dev lower when drawing random gaussian simulation values (84th percentile)
         "assume_good_loan_found": False,
@@ -24,6 +31,9 @@ CONFIG = {
         "assume_good_housing_growth": False,
         # same as good, except mean is set to 2 std dev higher (98th percentile); if both set, this value is used
         "assume_great_housing_growth": False,
+        # TODO implement refinancing
+        # simulates refinancing mortgage to a lower rate half way through simulation
+        "simulate_refinancing": False,
         # TODO add a nongaussian distribution parameter which allows for drawing random values from user-specified distribution?
         # TODO add parameter for early mortgage payments
     },
