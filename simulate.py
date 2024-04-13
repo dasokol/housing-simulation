@@ -57,6 +57,66 @@ def generate_params(fixed_params):
     return simulation_params
 
 
+def calculate_monthly_mortgage_principal_and_interest(property_price, mortgage_rate, loan_term_years, down_payment):
+    """
+    calculate the monthly mortgage amount using simulation param values
+    m = p(i * (1 + i)**n) / ((1 + i)**n - 1)
+    https://www.rocketmortgage.com/learn/how-to-calculate-mortgage
+    """
+    months_in_year = 12.0
+    p = property_price * (1.0 - down_payment)
+    i = mortgage_rate / months_in_year
+    n = loan_term_years * months_in_year
+
+    return (p * (i * (1.0 + i)**n)) / ((1.0 + i)**n - 1.0)
+
+
+def run_homeowner_simulation(fixed_params, simulation_params):
+    """
+    simulates homeowner performance into the future
+    returns the property value at the end of the simulation period and a list of nominal (not inflation adjusted) annual housing payment sums
+    """
+    property_price = simulation_params["property_price"]
+    mortgage_rate = simulation_params["mortgage_rate"]
+    loan_term_years = fixed_params["loan_term_years"]
+    down_payment = fixed_params["down_payment"]
+
+    monthly_mortgage_principal_and_interest = calculate_monthly_mortgage_principal_and_interest(
+        property_price, mortgage_rate, loan_term_years, down_payment)
+    annual_mortgage_principal_and_interest = monthly_mortgage_principal_and_interest * 12.0
+    # simulate property price change
+    current_property_value = property_price
+    for housing_market_return_value in simulation_params["annual_housing_market_return"]:
+        current_property_value *= (1.0 + housing_market_return_value)
+
+    annual_homeowner_costs = simulation_params["annual_homeowner_cost"]
+    annual_total_housing_costs = []
+    for i in range(fixed_params["n_years"]):
+        current_year_total_housing_cost = annual_homeowner_costs[i]
+        # stop mortgage payments after principal and interest paid off, i is number of years paid so far
+        if i < loan_term_years:
+            current_year_total_housing_cost += annual_mortgage_principal_and_interest
+        
+        annual_total_housing_costs.append(current_year_total_housing_cost)
+
+    # add down payment to first year
+    down_payment_amount = property_price * down_payment
+    annual_total_housing_costs[0] += down_payment_amount
+
+    # TODO if n_years is less than loan_term_years, then we still owe money on mortgage;
+    # calculate this remainder and somehow factor in post-simulation inflation, perhaps by simulating max(n_years, loan_term_years) inflation values
+    
+    return current_property_value, annual_total_housing_costs
+
+
+def run_renter_simulation(fixed_params, simulation_params):
+    """
+    simulates renter performance into the future
+    """
+    for _ in range(fixed_params["n_years"]):
+        pass
+
+
 def run_simulation(fixed_params):
     """
     run a simulation iteration
@@ -64,7 +124,11 @@ def run_simulation(fixed_params):
     simulation_params = generate_params(fixed_params)
     print("Running simulation with parameters:")
     print(json.dumps(simulation_params, indent=4))
-    
+    end_property_value, annual_total_housing_costs = run_homeowner_simulation(fixed_params, simulation_params)
+    renter_simulation_results = run_renter_simulation(fixed_params, simulation_params)
+
+    print(end_property_value)
+    print(annual_total_housing_costs)
     
 
 def main():
