@@ -13,19 +13,22 @@ ANNUAL_INFLATION_STD_DEV = 0.0123
 # NOTES:
 # parameters containing the term "annual" as a substring means they'll be recalculated every year of the simulation
 # if a parameter has a corresponding <parameter>_growth_rate parameter, the latter determines future values of the former
+# annual_rental_market_price* must be listed in config before annual_rental_cost* to ensure they're populated first since the latter rely on the former
 CONFIG = {
     # these are fixed and not drawn at random
     "fixed_parameters": {
         # number of monte carlo simulations to run
         "n_simulations": 1,
-        # simulate n years into future; at end of simulation, we liquidate all assets and compare results of own vs rent
+        # simulate n years into future; at end of simulation, we liquidate all assets and compare net worth of owner vs renter
         "n_years": 20,
         # fraction paid down on home purchase
         "down_payment": 0.2,
         "loan_term_years": 15,
-        # TODO implement income calculations
-        # ratio of mortgage principal and interest (not including taxes or insurance) to gross, pre-tax income
+        # ratio of mortgage principal and interest (not including taxes or insurance) to gross, pre-tax income; rule of thumb based on 28% rule
         "mortgage_to_income_ratio": 0.25,
+        # TODO make income grow with inflation? possible including good + great income growth assumptions, or maybe this doesn't really matter
+        # TODO add savings rate, probably 0.33 because investing all remaining money is too unrealistic because of taxes and non-housing cost of living
+        # TODO add prior net worth, probably 250k to defray cost of down payment so simulation is cash-flow positive (for simplification)
         # assume renter moves to new rental place every n_years_rental_move
         "n_years_rental_move": 4,
         # if set, then the simulations assume you've shopped around for a better-than-average mortgage rate
@@ -88,7 +91,6 @@ CONFIG = {
     # TODO should we add housing cost growth? i think taxes don't go up until property is sold, but insurance and hoa could rise
 
     # captures average rental price in the market which renter can get if he moves
-    # NOTE: annual_rental_market_price* must be lister in config before annual_rental_cost* to ensure they're populated first since the latter rely on these
     "annual_rental_market_price": {
         # from https://www.rentcafe.com/average-rent-market-trends/us/va/arlington/ and https://www.rent.com/virginia/arlington/ashton-heights-neighborhood
         # 2 bedroom cost in arlington

@@ -97,10 +97,33 @@ def calculate_remaining_mortgage_balance(p, i, n, s):
     return p*((1 + i)**n - (1 + i)**s) / (-1 + (1 + i)**n)
 
 
+def calculate_stock_assets(annual_income, annual_total_costs, n_years, simulation_params):
+    """
+    calculate value of stock assets at end of simulation
+    for simplicity, we assume annual income stays same and we ignore other cost of living and taxes
+    these can be ignored since they're the exact same and ignored in both homeowner and renter simulations
+    """
+    current_stock_value = 0.0
+    annual_stock_market_returns = simulation_params["annual_stock_market_return"]
+    for i in range(n_years):
+        surplus_cash = annual_income - annual_total_costs[i]
+        # investing cash up front for simplicity; this is slightly inaccurate since most costs are monthly in reality and stocks compound almost continuously
+        if surplus_cash > 0:
+            current_stock_value += surplus_cash
+        else:
+            print(f"WARNING: annual costs exceed annual income by ${abs(surplus_cash)}")
+
+        current_stock_value *= (1.0 + annual_stock_market_returns[i])
+
+    return current_stock_value
+
+
 def run_homeowner_simulation(fixed_params, simulation_params):
     """
     simulates homeowner performance into the future
-    returns the property value at the end of the simulation period and a list of nominal (not inflation adjusted) annual housing payment sums
+    also simulates investing money left over from not paying rent into stock market
+    returns the property value at the end of the simulation period, a list of nominal (not inflation adjusted) annual housing payment sums,
+    remaining mortgage balance, annual income, stock_assets
     """
     property_price = simulation_params["property_price"]
     mortgage_rate = simulation_params["mortgage_rate"]
@@ -110,6 +133,7 @@ def run_homeowner_simulation(fixed_params, simulation_params):
     monthly_mortgage_principal_and_interest, principal, interest_rate, n_payments_total = calculate_monthly_mortgage_principal_and_interest(
         property_price, mortgage_rate, loan_term_years, down_payment)
     annual_mortgage_principal_and_interest = monthly_mortgage_principal_and_interest * MONTHS_PER_YEAR
+    annual_income = annual_mortgage_principal_and_interest / fixed_params["mortgage_to_income_ratio"]
     # simulate property price change
     current_property_value = property_price
     for housing_market_return_value in simulation_params["annual_housing_market_return"]:
@@ -136,11 +160,13 @@ def run_homeowner_simulation(fixed_params, simulation_params):
     if n_payments_remaining > 0:
         n_payments_made = n_payments_total - n_payments_remaining
         remaining_mortgage_balance = calculate_remaining_mortgage_balance(principal, interest_rate, n_payments_total, n_payments_made)
+
+    stock_assets = calculate_stock_assets(annual_income, annual_total_homeowner_costs, n_years, simulation_params)
     
-    return current_property_value, annual_total_homeowner_costs, remaining_mortgage_balance
+    return current_property_value, annual_total_homeowner_costs, remaining_mortgage_balance, annual_income, stock_assets
 
 
-def run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs):
+def run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs, annual_income):
     """
     simulates renter performance into the future
     also simulates investing money left over from not purchasing property into stock market
@@ -150,22 +176,14 @@ def run_renter_simulation(fixed_params, simulation_params, annual_total_homeowne
     annual_rental_costs = simulation_params["annual_rental_cost"]
     amortized_annual_moving_costs = simulation_params["amortized_annual_moving_cost"]
     amortized_annual_moving_savings = simulation_params["amortized_annual_moving_saving"]
-    for i in range(fixed_params["n_years"]):
+    n_years = fixed_params["n_years"]
+    for i in range(n_years):
         current_year_total_rental_cost = annual_rental_costs[i] + amortized_annual_moving_costs[i] - amortized_annual_moving_savings[i]
         annual_total_renter_costs.append(current_year_total_rental_cost)
 
-    current_stock_value = 0.0
-    annual_stock_market_returns = simulation_params["annual_stock_market_return"]
-    for i in range(fixed_params["n_years"]):
-        # TODO account for homeowner stock investment in years when homeowner payments are less than renter payments?
-        renter_surplus_cash = annual_total_homeowner_costs[i] - annual_total_renter_costs[i]
-        # investing cash up front for simplicity; this is slightly inaccurate since renters pay monthly in reality and stocks compound almost continuously
-        if renter_surplus_cash > 0:
-            current_stock_value += renter_surplus_cash
-
-        current_stock_value *= (1.0 + annual_stock_market_returns[i])
+    stock_assets = calculate_stock_assets(annual_income, annual_total_renter_costs, n_years, simulation_params)
     
-    return current_stock_value, annual_total_renter_costs
+    return stock_assets, annual_total_renter_costs
 
 
 def run_simulation(fixed_params):
@@ -175,16 +193,20 @@ def run_simulation(fixed_params):
     simulation_params = generate_params(fixed_params)
     print("Running simulation with parameters:")
     print(json.dumps(simulation_params, indent=4))
-    end_property_value, annual_total_homeowner_costs, remaining_mortgage_balance = run_homeowner_simulation(fixed_params, simulation_params)
-    end_stock_value, annual_total_renter_costs = run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs)
+    end_property_value, annual_total_homeowner_costs, remaining_mortgage_balance, annual_income, homeowner_stock_assets = run_homeowner_simulation(
+        fixed_params, simulation_params)
+    renter_stock_assets, annual_total_renter_costs = run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs, annual_income)
     # TODO calculate value after property sale, ie taxes, selling fees, etc.
     # TODO calculate value after stock sale, ie taxes, selling fees, etc.
-
+    print(f"Annual income: {annual_income}")
     print(f"End property value: {end_property_value}")
+    print(f"Homeowner stock assets: {homeowner_stock_assets}")
     print(f"Annual total homeowner costs: {annual_total_homeowner_costs}")
     print(f"Remaining mortgage balance: {remaining_mortgage_balance}")
-    print(f"End stock value: {end_stock_value}")
+    print(f"Renter stock assets: {renter_stock_assets}")
     print(f"Annual total renter costs: {annual_total_renter_costs}")
+    
+    # TODO calculate both net worths at end of simulation and also convert them to today's dollars using inflation values
     
 
 def main():
