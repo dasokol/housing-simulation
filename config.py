@@ -92,8 +92,8 @@ CONFIG = {
         "std_dev": 100,
     },
     
-    # represents concessions from moving; does not capture rent price drop, as that is calculated based on expected rent cost growth
-    "amortized_annual_moving_savings": {
+    # represents rent concessions, etc. gained from moving; does not capture rent price drop, as that is calculated based on expected rent cost growth
+    "amortized_annual_moving_saving": {
         "mean": 1000,
         "std_dev": 200,
     },

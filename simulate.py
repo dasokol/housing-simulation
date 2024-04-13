@@ -90,31 +90,51 @@ def run_homeowner_simulation(fixed_params, simulation_params):
         current_property_value *= (1.0 + housing_market_return_value)
 
     annual_homeowner_costs = simulation_params["annual_homeowner_cost"]
-    annual_total_housing_costs = []
+    annual_total_homeowner_costs = []
     for i in range(fixed_params["n_years"]):
         current_year_total_housing_cost = annual_homeowner_costs[i]
         # stop mortgage payments after principal and interest paid off, i is number of years paid so far
         if i < loan_term_years:
             current_year_total_housing_cost += annual_mortgage_principal_and_interest
         
-        annual_total_housing_costs.append(current_year_total_housing_cost)
+        annual_total_homeowner_costs.append(current_year_total_housing_cost)
 
     # add down payment to first year
     down_payment_amount = property_price * down_payment
-    annual_total_housing_costs[0] += down_payment_amount
+    annual_total_homeowner_costs[0] += down_payment_amount
 
     # TODO if n_years is less than loan_term_years, then we still owe money on mortgage;
     # calculate this remainder and somehow factor in post-simulation inflation, perhaps by simulating max(n_years, loan_term_years) inflation values
     
-    return current_property_value, annual_total_housing_costs
+    return current_property_value, annual_total_homeowner_costs
 
 
-def run_renter_simulation(fixed_params, simulation_params):
+def run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs):
     """
     simulates renter performance into the future
+    also simulates investing money left over from not purchasing property into stock market
+    returns the stock value at the end of the simulation period and a list of nominal (not inflation adjusted) annual rental payment sums
     """
-    for _ in range(fixed_params["n_years"]):
-        pass
+    annual_total_renter_costs = []
+    annual_rental_costs = simulation_params["annual_rental_cost"]
+    amortized_annual_moving_costs = simulation_params["amortized_annual_moving_cost"]
+    amortized_annual_moving_savings = simulation_params["amortized_annual_moving_saving"]
+    for i in range(fixed_params["n_years"]):
+        current_year_total_rental_cost = annual_rental_costs[i] + amortized_annual_moving_costs[i] - amortized_annual_moving_savings[i]
+        annual_total_renter_costs.append(current_year_total_rental_cost)
+
+    current_stock_value = 0.0
+    annual_stock_market_returns = simulation_params["annual_stock_market_return"]
+    for i in range(fixed_params["n_years"]):
+        # TODO account for homeowner stock investment in years when homeowner payments are less than renter payments?
+        renter_surplus_cash = annual_total_homeowner_costs[i] - annual_total_renter_costs[i]
+        # investing cash up front for simplicity; this is slightly inaccurate since renters pay monthly in reality and stocks compound almost continuously
+        if renter_surplus_cash > 0:
+            current_stock_value += renter_surplus_cash
+
+        current_stock_value *= (1.0 + annual_stock_market_returns[i])
+    
+    return current_stock_value, annual_total_renter_costs
 
 
 def run_simulation(fixed_params):
@@ -124,14 +144,17 @@ def run_simulation(fixed_params):
     simulation_params = generate_params(fixed_params)
     print("Running simulation with parameters:")
     print(json.dumps(simulation_params, indent=4))
-    end_property_value, annual_total_housing_costs = run_homeowner_simulation(fixed_params, simulation_params)
-    renter_simulation_results = run_renter_simulation(fixed_params, simulation_params)
+    end_property_value, annual_total_homeowner_costs = run_homeowner_simulation(fixed_params, simulation_params)
+    end_stock_value, annual_total_renter_costs = run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs)
 
-    print(end_property_value)
-    print(annual_total_housing_costs)
+    print(f"End property value: {end_property_value}")
+    print(f"Annual total homeowner costs: {annual_total_homeowner_costs}")
+    print(f"End stock value: {end_stock_value}")
+    print(f"Annual total renter costs: {annual_total_renter_costs}")
     
 
 def main():
+    # TODO add command that reads mortgage values, fixes these, and then runs the simulations
     fixed_params = CONFIG.pop("fixed_parameters")
     for i in range(fixed_params["n_simulations"]):
         run_simulation(fixed_params)
