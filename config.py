@@ -5,6 +5,11 @@ global vars and config parameters for simulation
 MONTHS_PER_YEAR = 12.0
 
 
+# https://www.gurufocus.com/market/us-inflation-contributors
+ANNUAL_INFLATION_MEAN = 0.0239
+ANNUAL_INFLATION_STD_DEV = 0.0123
+
+
 # NOTES:
 # parameters containing the term "annual" as a substring means they'll be recalculated every year of the simulation
 # if a parameter has a corresponding <parameter>_growth_rate parameter, the latter determines future values of the former
@@ -14,13 +19,15 @@ CONFIG = {
         # number of monte carlo simulations to run
         "n_simulations": 1,
         # simulate n years into future; at end of simulation, we liquidate all assets and compare results of own vs rent
-        "n_years": 1,
+        "n_years": 20,
         # fraction paid down on home purchase
         "down_payment": 0.2,
         "loan_term_years": 15,
         # TODO implement income calculations
         # ratio of mortgage principal and interest (not including taxes or insurance) to gross, pre-tax income
         "mortgage_to_income_ratio": 0.25,
+        # assume renter moves to new rental place every n_years_rental_move
+        "n_years_rental_move": 4,
         # if set, then the simulations assume you've shopped around for a better-than-average mortgage rate
         # specifically, it sets the mortgage rate mean to be 1 std dev lower when drawing random gaussian simulation values (84th percentile)
         "assume_good_loan_found": False,
@@ -54,9 +61,8 @@ CONFIG = {
     },
 
     "annual_inflation": {
-        # https://www.gurufocus.com/market/us-inflation-contributors
-        "mean": 0.0239,
-        "std_dev": 0.0123,
+        "mean": ANNUAL_INFLATION_MEAN,
+        "std_dev": ANNUAL_INFLATION_STD_DEV,
         # TODO use some function to determine multiyear trends for these params; for instance, if inflation is high one year it's likely to still be somewhat high the next
     },
 
@@ -81,16 +87,30 @@ CONFIG = {
     },
     # TODO should we add housing cost growth? i think taxes don't go up until property is sold, but insurance and hoa could rise
 
-    # rental performance
-    "annual_rental_cost": {
+    # captures average rental price in the market which renter can get if he moves
+    # NOTE: annual_rental_market_price* must be lister in config before annual_rental_cost* to ensure they're populated first since the latter rely on these
+    "annual_rental_market_price": {
         # from https://www.rentcafe.com/average-rent-market-trends/us/va/arlington/ and https://www.rent.com/virginia/arlington/ashton-heights-neighborhood
         # 2 bedroom cost in arlington
         "mean": 3095*12,
         "std_dev": 175*12,
     },
 
+    "annual_rental_market_price_growth_rate": {
+        # assuming growth at inflation rate above
+        "mean": ANNUAL_INFLATION_MEAN,
+        "std_dev": ANNUAL_INFLATION_STD_DEV,
+    },
+    
+    # captures realized rental performance for renter
+    "annual_rental_cost": {
+        "mean": 3095*12,
+        "std_dev": 175*12,
+    },
+
     "annual_rental_cost_growth_rate": {
-        # just good guesses; assumes you stay in each place for a few years (with price increases from landlord) and move to a cheaper place when it gets too expensive
+        # guesses based on personal experience
+        # assumes you stay in each place for n_years_rental_move years (landlord raises prices yearly), moving to a new place when current is too expensive
         "mean": 0.06,
         "std_dev": 0.03,
     },

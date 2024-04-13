@@ -41,7 +41,6 @@ def generate_params(fixed_params):
             # if it's a growth_rate param, we already have starting value and only need to generate n_years - 1 more values
             if "growth_rate" in param_base_name:
                 n_years_to_generate -= 1
-            # TODO change values based on rental moves
             for _ in range(n_years_to_generate):
                 # drawing from normal distribution to get value for parameter
                 annual_value = random.gauss(mu=param_mean, sigma=param_std_dev)
@@ -55,13 +54,19 @@ def generate_params(fixed_params):
     for param_base_name in simulation_params:
         param_growth_rates = simulation_params.get(f"{param_base_name}_growth_rate")
         # only consider params with corresponding growth_rate counterpart
-        if not param_growth_rates:
+        if param_growth_rates is None:
             continue
 
         current_param_value = simulation_params[param_base_name]
         param_value = [current_param_value]
-        for param_growth_rate in param_growth_rates:
-            current_param_value *= (1.0 + param_growth_rate)
+        for i, param_growth_rate in enumerate(param_growth_rates):
+            # simulate annual_rental_cost changes based on rental moves every n_years_rental_move years; then param_value is reset to market price
+            if param_base_name == "annual_rental_cost" and (len(param_value) + 1) % fixed_params["n_years_rental_move"] == 0:
+                # i is one year behind simulation year, so we add one to get current year market price
+                current_param_value = simulation_params["annual_rental_market_price"][i + 1]
+            else:
+                current_param_value *= (1.0 + param_growth_rate)
+            
             param_value.append(current_param_value)
 
         simulation_params[param_base_name] = param_value
@@ -127,12 +132,10 @@ def run_homeowner_simulation(fixed_params, simulation_params):
 
     remaining_mortgage_balance = 0.0
     n_payments_remaining = max((loan_term_years - n_years) * MONTHS_PER_YEAR, 0)
-    # TODO if n_years is less than loan_term_years, then we still owe money on mortgage;
+    # if n_years is less than loan_term_years, then we still owe money on mortgage;
     if n_payments_remaining > 0:
         n_payments_made = n_payments_total - n_payments_remaining
         remaining_mortgage_balance = calculate_remaining_mortgage_balance(principal, interest_rate, n_payments_total, n_payments_made)
-    
-    # TODO calculate value after property sale, ie taxes, selling fees, etc.
     
     return current_property_value, annual_total_homeowner_costs, remaining_mortgage_balance
 
@@ -161,8 +164,6 @@ def run_renter_simulation(fixed_params, simulation_params, annual_total_homeowne
             current_stock_value += renter_surplus_cash
 
         current_stock_value *= (1.0 + annual_stock_market_returns[i])
-
-    # TODO calculate value after stock sale, ie taxes, selling fees, etc.
     
     return current_stock_value, annual_total_renter_costs
 
@@ -176,6 +177,8 @@ def run_simulation(fixed_params):
     print(json.dumps(simulation_params, indent=4))
     end_property_value, annual_total_homeowner_costs, remaining_mortgage_balance = run_homeowner_simulation(fixed_params, simulation_params)
     end_stock_value, annual_total_renter_costs = run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs)
+    # TODO calculate value after property sale, ie taxes, selling fees, etc.
+    # TODO calculate value after stock sale, ie taxes, selling fees, etc.
 
     print(f"End property value: {end_property_value}")
     print(f"Annual total homeowner costs: {annual_total_homeowner_costs}")
