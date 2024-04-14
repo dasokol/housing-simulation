@@ -9,6 +9,13 @@ import random
 import json
 
 
+def fmt_dollars(amount):
+    """
+    format amount as dollars with commas
+    """
+    return '${:,.2f}'.format(amount)
+
+
 def generate_params(fixed_params):
     """
     generate the parameters required for one simulation
@@ -97,16 +104,23 @@ def calculate_remaining_mortgage_balance(p, i, n, s):
     return p*((1 + i)**n - (1 + i)**s) / (-1 + (1 + i)**n)
 
 
-def calculate_stock_assets(annual_income, annual_total_costs, n_years, simulation_params):
+def calculate_stock_assets(annual_income, annual_total_costs, fixed_params, simulation_params):
     """
     calculate value of stock assets at end of simulation
     for simplicity, we assume annual income stays same and we ignore other cost of living and taxes
     these can be ignored since they're the exact same and ignored in both homeowner and renter simulations
     """
-    current_stock_value = 0.0
+    n_years = fixed_params["n_years"]
+    taxes_and_nonhousing_cost_of_living_to_income_ratio = fixed_params["taxes_and_nonhousing_cost_of_living_to_income_ratio"]
+    initial_net_worth = fixed_params["initial_net_worth"]
     annual_stock_market_returns = simulation_params["annual_stock_market_return"]
+    current_stock_value = 0.0
     for i in range(n_years):
-        surplus_cash = annual_income - annual_total_costs[i]
+        surplus_cash = (annual_income * (1.0 - taxes_and_nonhousing_cost_of_living_to_income_ratio)) - annual_total_costs[i]
+        # add net worth into surplus cash for first year so we're cash positive after down payment
+        if i == 0:
+            surplus_cash += initial_net_worth
+        
         # investing cash up front for simplicity; this is slightly inaccurate since most costs are monthly in reality and stocks compound almost continuously
         if surplus_cash > 0:
             current_stock_value += surplus_cash
@@ -161,7 +175,7 @@ def run_homeowner_simulation(fixed_params, simulation_params):
         n_payments_made = n_payments_total - n_payments_remaining
         remaining_mortgage_balance = calculate_remaining_mortgage_balance(principal, interest_rate, n_payments_total, n_payments_made)
 
-    stock_assets = calculate_stock_assets(annual_income, annual_total_homeowner_costs, n_years, simulation_params)
+    stock_assets = calculate_stock_assets(annual_income, annual_total_homeowner_costs, fixed_params, simulation_params)
     
     return current_property_value, annual_total_homeowner_costs, remaining_mortgage_balance, annual_income, stock_assets
 
@@ -181,9 +195,37 @@ def run_renter_simulation(fixed_params, simulation_params, annual_total_homeowne
         current_year_total_rental_cost = annual_rental_costs[i] + amortized_annual_moving_costs[i] - amortized_annual_moving_savings[i]
         annual_total_renter_costs.append(current_year_total_rental_cost)
 
-    stock_assets = calculate_stock_assets(annual_income, annual_total_renter_costs, n_years, simulation_params)
+    stock_assets = calculate_stock_assets(annual_income, annual_total_renter_costs, fixed_params, simulation_params)
     
     return stock_assets, annual_total_renter_costs
+
+
+def liquidate_all_assets(end_property_value, remaining_mortgage_balance, homeowner_stock_assets, renter_stock_assets):
+    """
+    calculate both homeowner and renter net worth by simulating sale of all assets
+    considers taxes as well (assume all stock and home value, minus home purchase price and initial stock net worth for renter
+    is long term capital gain for simplicity)
+    also considers property sale fees
+    return homeowner_net_worth, renter_net_worth
+    """
+    # TODO calculate value after property and stock sale, ie taxes, selling fees, etc.
+    homeowner_net_worth = end_property_value - remaining_mortgage_balance + homeowner_stock_assets
+    renter_net_worth = renter_stock_assets
+
+    return homeowner_net_worth, renter_net_worth
+
+
+def dollars_today(simulation_params, amount):
+    """
+    convert amount into today's dollars by using inflation params
+    """
+    annual_inflation = simulation_params["annual_inflation"]
+    current_amount = amount
+    # working backwards from end yoy inflation values through each previous one until simulation beginning
+    for inflation_value in reversed(annual_inflation):
+        current_amount /= (1.0 + inflation_value)
+
+    return current_amount
 
 
 def run_simulation(fixed_params):
@@ -196,19 +238,27 @@ def run_simulation(fixed_params):
     end_property_value, annual_total_homeowner_costs, remaining_mortgage_balance, annual_income, homeowner_stock_assets = run_homeowner_simulation(
         fixed_params, simulation_params)
     renter_stock_assets, annual_total_renter_costs = run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs, annual_income)
-    # TODO calculate value after property sale, ie taxes, selling fees, etc.
-    # TODO calculate value after stock sale, ie taxes, selling fees, etc.
-    print(f"Annual income: {annual_income}")
+
+    print(f"Annual income: {fmt_dollars(annual_income)}")
     print(f"End property value: {end_property_value}")
     print(f"Homeowner stock assets: {homeowner_stock_assets}")
     print(f"Annual total homeowner costs: {annual_total_homeowner_costs}")
-    print(f"Remaining mortgage balance: {remaining_mortgage_balance}")
-    print(f"Renter stock assets: {renter_stock_assets}")
+    print(f"Remaining mortgage balance: {fmt_dollars(remaining_mortgage_balance)}")
+    print(f"Renter stock assets: {fmt_dollars(renter_stock_assets)}")
     print(f"Annual total renter costs: {annual_total_renter_costs}")
     
-    # TODO calculate both net worths at end of simulation and also convert them to today's dollars using inflation values
+    # calculate both net worths at end of simulation
+    homeowner_net_worth, renter_net_worth = liquidate_all_assets(end_property_value, remaining_mortgage_balance, homeowner_stock_assets, renter_stock_assets)
+    print(f"Homeowner net worth: {fmt_dollars(homeowner_net_worth)}")
+    print(f"Renter net worth: {fmt_dollars(renter_net_worth)}")
     
-
+    # convert net worths to today's dollars using inflation values
+    homeowner_net_worth_dollars_today = dollars_today(simulation_params, homeowner_net_worth)
+    renter_net_worth_dollars_today = dollars_today(simulation_params, renter_net_worth)
+    print(f"Homeowner net worth in today's dollars: {fmt_dollars(homeowner_net_worth_dollars_today)}")
+    print(f"Renter net worth in today's dollars: {fmt_dollars(renter_net_worth_dollars_today)}")
+    
+    
 def main():
     # TODO add command that reads user-specified mortgage values, fixes these, and then runs the simulations
     fixed_params = CONFIG.pop("fixed_parameters")

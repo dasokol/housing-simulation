@@ -20,15 +20,17 @@ CONFIG = {
         # number of monte carlo simulations to run
         "n_simulations": 1,
         # simulate n years into future; at end of simulation, we liquidate all assets and compare net worth of owner vs renter
-        "n_years": 20,
+        "n_years": 30,
         # fraction paid down on home purchase
         "down_payment": 0.2,
         "loan_term_years": 15,
         # ratio of mortgage principal and interest (not including taxes or insurance) to gross, pre-tax income; rule of thumb based on 28% rule
         "mortgage_to_income_ratio": 0.25,
-        # TODO make income grow with inflation? possible including good + great income growth assumptions, or maybe this doesn't really matter
-        # TODO add savings rate, probably 0.33 because investing all remaining money is too unrealistic because of taxes and non-housing cost of living
-        # TODO add prior net worth, probably 250k to defray cost of down payment so simulation is cash-flow positive (for simplification)
+        # TODO make income grow with inflation? possibly including good + great income growth assumptions, or maybe this doesn't really matter
+        # fraction of gross income spent on taxes and all other nonhousing expenses; the rest after housing costs is invested in stocks
+        "taxes_and_nonhousing_cost_of_living_to_income_ratio": 0.50,
+        # prior net worth to defray cost of down payment so simulation is cash-flow positive (for simplification)
+        "initial_net_worth": 250000,
         # assume renter moves to new rental place every n_years_rental_move
         "n_years_rental_move": 4,
         # if set, then the simulations assume you've shopped around for a better-than-average mortgage rate
