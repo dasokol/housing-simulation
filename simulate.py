@@ -3,10 +3,40 @@ Monte Carlo simulation to predict many different possible housing outcomes
 usage:
     # configure values you want in config.py and then run:
     python simulate.py
+    python simulate.py --interactive # -i for short, allows you to enter your mortgage and income info
 """
 from config import *
 import random
 import json
+import argparse
+
+
+def parse_input(fixed_params):
+    """
+    read CLI arguments and act on them
+    modifies fixed_params based on user input if interactive is set
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--interactive", dest="interactive", default=False, help="Interactively enter values for mortgage and income", type=bool,
+                        action=argparse.BooleanOptionalAction)
+    args = parser.parse_args()
+
+    # interactive command reads user-specified income and mortgage values, fixes these, and then runs the simulations
+    if args.interactive:
+        print("Running interactive mode. Please answer the questions. If any information is left out, we'll use simulated defaults.")
+        annual_income = input("What is your annual gross income?\n")
+        if annual_income:
+            annual_income = float(annual_income)
+        mortgage_rate = input("What is your mortgage rate percentage? E.g. 6.81.\n")
+        if mortgage_rate:
+            mortgage_rate = float(mortgage_rate) / 100.0
+        property_price = input("What is your home's purchase price? E.g. 346709.24.\n")
+        if property_price:
+            property_price = float(property_price)
+
+        fixed_params["annual_income"] = annual_income
+        fixed_params["mortgage_rate"] = mortgage_rate
+        fixed_params["property_price"] = property_price
 
 
 def fmt_dollars(amount):
@@ -24,6 +54,12 @@ def generate_params(fixed_params):
     """
     simulation_params = {}
     for param_base_name in CONFIG:
+        # if fixed value set, it means we override with user interactive value
+        param_fixed_value = fixed_params.get(param_base_name)
+        if param_fixed_value:
+            simulation_params[param_base_name] = param_fixed_value
+            continue
+        
         params = CONFIG[param_base_name]
         param_mean = params["mean"]
         param_std_dev = params["std_dev"]
@@ -147,7 +183,9 @@ def run_homeowner_simulation(fixed_params, simulation_params):
     monthly_mortgage_principal_and_interest, principal, interest_rate, n_payments_total = calculate_monthly_mortgage_principal_and_interest(
         property_price, mortgage_rate, loan_term_years, down_payment)
     annual_mortgage_principal_and_interest = monthly_mortgage_principal_and_interest * MONTHS_PER_YEAR
-    annual_income = annual_mortgage_principal_and_interest / fixed_params["mortgage_to_income_ratio"]
+    annual_income = fixed_params.get("annual_income")
+    if not annual_income:
+        annual_income = annual_mortgage_principal_and_interest / fixed_params["mortgage_to_income_ratio"]
     # simulate property price change
     current_property_value = property_price
     for housing_market_return_value in simulation_params["annual_housing_market_return"]:
@@ -267,8 +305,8 @@ def run_simulation(fixed_params):
     
     
 def main():
-    # TODO add command that reads user-specified mortgage values, fixes these, and then runs the simulations; also allow income input
     fixed_params = CONFIG.pop("fixed_parameters")
+    parse_input(fixed_params)
     for i in range(fixed_params["n_simulations"]):
         run_simulation(fixed_params)
 
