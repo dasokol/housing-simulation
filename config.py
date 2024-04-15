@@ -20,7 +20,7 @@ CONFIG = {
         # number of monte carlo simulations to run
         "n_simulations": 1,
         # simulate n years into future; at end of simulation, we liquidate all assets and compare net worth of owner vs renter
-        "n_years": 30,
+        "n_years": 10,
         # fraction paid down on home purchase
         "down_payment": 0.2,
         "loan_term_years": 15,
@@ -46,6 +46,8 @@ CONFIG = {
         # TODO implement refinancing
         # simulates refinancing mortgage to a lower rate half way through simulation
         "simulate_refinancing": False,
+        # if married, no tax on first 500k of home profits, else none on first 250k
+        "married_at_simulation_end": False,
         # TODO add a nongaussian distribution parameter which allows for drawing random values from user-specified distribution?
         # TODO add parameter for early mortgage payments
     },

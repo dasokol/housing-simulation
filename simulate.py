@@ -200,17 +200,23 @@ def run_renter_simulation(fixed_params, simulation_params, annual_total_homeowne
     return stock_assets, annual_total_renter_costs
 
 
-def liquidate_all_assets(end_property_value, remaining_mortgage_balance, homeowner_stock_assets, renter_stock_assets):
+def liquidate_all_assets(is_married, property_price, end_property_value, remaining_mortgage_balance, homeowner_stock_assets, renter_stock_assets):
     """
     calculate both homeowner and renter net worth by simulating sale of all assets
-    considers taxes as well (assume all stock and home value, minus home purchase price and initial stock net worth for renter
-    is long term capital gain for simplicity)
-    also considers property sale fees
+    considers taxes as well also considers property sale fees
+    assumes all stock and home value (minus home purchase price) is long term capital gain for simplicity
+    uses 15% long term capital gain rate since we'd likely be selling gradually and not pushing ourselves into the ultra-high 20% bracket
     return homeowner_net_worth, renter_net_worth
     """
-    # TODO calculate value after property and stock sale, ie taxes, selling fees, etc.
-    homeowner_net_worth = end_property_value - remaining_mortgage_balance + homeowner_stock_assets
-    renter_net_worth = renter_stock_assets
+    long_term_capital_gains_tax_rate = 0.15
+    # TODO calculate value after selling fees, etc.
+    property_capital_gain = end_property_value - property_price
+    property_capital_gain_exempt_amount = 500000 if is_married else 250000
+    property_capital_gain_taxable_amount = max(property_capital_gain - property_capital_gain_exempt_amount, 0)
+    property_capital_gain_total_tax = property_capital_gain_taxable_amount * long_term_capital_gains_tax_rate
+    homeowner_net_worth = end_property_value - remaining_mortgage_balance - property_capital_gain_total_tax + \
+        (homeowner_stock_assets * (1.0 - long_term_capital_gains_tax_rate))
+    renter_net_worth = (renter_stock_assets * (1.0 - long_term_capital_gains_tax_rate))
 
     return homeowner_net_worth, renter_net_worth
 
@@ -248,7 +254,8 @@ def run_simulation(fixed_params):
     print(f"Annual total renter costs: {annual_total_renter_costs}")
     
     # calculate both net worths at end of simulation
-    homeowner_net_worth, renter_net_worth = liquidate_all_assets(end_property_value, remaining_mortgage_balance, homeowner_stock_assets, renter_stock_assets)
+    homeowner_net_worth, renter_net_worth = liquidate_all_assets(fixed_params["married_at_simulation_end"], simulation_params["property_price"],
+        end_property_value, remaining_mortgage_balance, homeowner_stock_assets, renter_stock_assets)
     print(f"Homeowner net worth: {fmt_dollars(homeowner_net_worth)}")
     print(f"Renter net worth: {fmt_dollars(renter_net_worth)}")
     
@@ -260,11 +267,12 @@ def run_simulation(fixed_params):
     
     
 def main():
-    # TODO add command that reads user-specified mortgage values, fixes these, and then runs the simulations
+    # TODO add command that reads user-specified mortgage values, fixes these, and then runs the simulations; also allow income input
     fixed_params = CONFIG.pop("fixed_parameters")
     for i in range(fixed_params["n_simulations"]):
         run_simulation(fixed_params)
 
+    # TODO add analysis across simulation runs showing statistics comparing homeowner vs renter
 
 if __name__=="__main__":
     main()
