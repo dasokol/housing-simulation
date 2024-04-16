@@ -3,8 +3,6 @@ global vars and config parameters for simulation
 """
 # constant vals
 MONTHS_PER_YEAR = 12.0
-
-
 # https://www.gurufocus.com/market/us-inflation-contributors
 ANNUAL_INFLATION_MEAN = 0.0239
 ANNUAL_INFLATION_STD_DEV = 0.0123
@@ -18,18 +16,18 @@ CONFIG = {
     # these are fixed and not drawn at random
     "fixed_parameters": {
         # number of monte carlo simulations to run
-        "n_simulations": 1,
+        "n_simulations": 100000,
         # simulate n years into future; at end of simulation, we liquidate all assets and compare net worth of owner vs renter
-        "n_years": 10,
+        "n_years": 30,
         # fraction paid down on home purchase
         "down_payment": 0.2,
         "loan_term_years": 15,
-        # ratio of mortgage principal and interest (not including taxes or insurance) to gross, pre-tax income; rule of thumb based on 28% rule
-        "mortgage_to_income_ratio": 0.25,
+        # ratio of mortgage principal and interest (not including taxes, insurance, hoa, etc.) to gross, pre-tax income; rule of thumb based on 28% rule
+        "mortgage_to_income_ratio": 0.22,
         # TODO make income grow with inflation? possibly including good + great income growth assumptions, or maybe this doesn't really matter
         # fraction of gross income spent on taxes and all other nonhousing expenses; the rest after housing costs is invested in stocks
         "taxes_and_nonhousing_cost_of_living_to_income_ratio": 0.50,
-        # prior net worth to defray cost of down payment so simulation is cash-flow positive (for simplification)
+        # assume prior net worth with default example value to defray cost of down payment so simulation is cash-flow positive (for simplification)
         "initial_net_worth": 250000,
         # assume renter moves to new rental place every n_years_rental_move
         "n_years_rental_move": 4,
@@ -38,7 +36,7 @@ CONFIG = {
         "assume_good_loan_found": False,
         # same as good loan, except mean is set to 2 std dev lower (98th percentile); if both set, this value is used
         "assume_great_loan_found": False,
-        # if set, then the simulations assume your location has high-than-average growth
+        # if set, then the simulations assume your location has high-than-national-average growth
         # specifically, it sets the housing return mean to be 1 std dev higher when drawing random gaussian simulation values (84th percentile)
         "assume_good_housing_growth": False,
         # same as good, except mean is set to 2 std dev higher (98th percentile); if both set, this value is used
@@ -48,6 +46,8 @@ CONFIG = {
         "simulate_refinancing": False,
         # if married, no tax on first 500k of home profits, else none on first 250k
         "married_at_simulation_end": False,
+        # if enabled, prints a bunch of info out each simulation iteration
+        "debug_mode": False,
         # TODO add a nongaussian distribution parameter which allows for drawing random values from user-specified distribution?
         # TODO add parameter for early mortgage payments
     },
@@ -92,8 +92,13 @@ CONFIG = {
         "mean": 17500,
         "std_dev": 1500,
     },
-    # TODO should we add housing cost growth? i think taxes don't go up until property is sold, but insurance and hoa could rise
-
+    
+    #  reflects rise of insurance, hoa, and annual tax assessed value by Arlington
+    "annual_homeowner_cost_growth_rate": {
+        "mean": ANNUAL_INFLATION_MEAN,
+        "std_dev": ANNUAL_INFLATION_STD_DEV,
+    },
+    
     # captures average rental price in the market which renter can get if he moves
     "annual_rental_market_price": {
         # from https://www.rentcafe.com/average-rent-market-trends/us/va/arlington/ and https://www.rent.com/virginia/arlington/ashton-heights-neighborhood
