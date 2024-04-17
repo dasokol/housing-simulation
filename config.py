@@ -23,8 +23,9 @@ CONFIG = {
         "down_payment": 0.2,
         "loan_term_years": 15,
         # ratio of mortgage principal and interest (not including taxes, insurance, hoa, etc.) to gross, pre-tax income; rule of thumb based on 28% rule
-        "mortgage_to_income_ratio": 0.22,
-        # TODO make income grow with inflation? possibly including good + great income growth assumptions, or maybe this doesn't really matter
+        "mortgage_to_income_ratio": 0.25,
+        # make income grow with inflation
+        "annual_income_growth_rate": ANNUAL_INFLATION_MEAN,
         # fraction of gross income spent on taxes and all other nonhousing expenses; the rest after housing costs is invested in stocks
         "taxes_and_nonhousing_cost_of_living_to_income_ratio": 0.50,
         # assume prior net worth with default example value to defray cost of down payment so simulation is cash-flow positive (for simplification)

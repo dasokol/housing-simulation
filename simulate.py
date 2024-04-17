@@ -157,7 +157,7 @@ def calculate_stock_assets(annual_income, annual_total_costs, fixed_params, simu
     annual_stock_market_returns = simulation_params["annual_stock_market_return"]
     current_stock_value = 0.0
     for i in range(n_years):
-        surplus_cash = (annual_income * (1.0 - taxes_and_nonhousing_cost_of_living_to_income_ratio)) - annual_total_costs[i]
+        surplus_cash = (annual_income[i] * (1.0 - taxes_and_nonhousing_cost_of_living_to_income_ratio)) - annual_total_costs[i]
         # add net worth into surplus cash for first year so we're cash positive after down payment
         if i == 0:
             surplus_cash += initial_net_worth
@@ -188,18 +188,23 @@ def run_homeowner_simulation(fixed_params, simulation_params):
     monthly_mortgage_principal_and_interest, principal, interest_rate, n_payments_total = calculate_monthly_mortgage_principal_and_interest(
         property_price, mortgage_rate, loan_term_years, down_payment)
     annual_mortgage_principal_and_interest = monthly_mortgage_principal_and_interest * MONTHS_PER_YEAR
-    annual_income = fixed_params.get("annual_income")
-    if not annual_income:
-        annual_income = annual_mortgage_principal_and_interest / fixed_params["mortgage_to_income_ratio"]
+    current_annual_income = fixed_params.get("annual_income")
+    if not current_annual_income:
+        current_annual_income = annual_mortgage_principal_and_interest / fixed_params["mortgage_to_income_ratio"]
+    
     # simulate property price change
     current_property_value = property_price
     for housing_market_return_value in simulation_params["annual_housing_market_return"]:
         current_property_value *= (1.0 + housing_market_return_value)
 
     annual_homeowner_costs = simulation_params["annual_homeowner_cost"]
+    annual_inflation = simulation_params["annual_inflation"]
     annual_total_homeowner_costs = []
+    annual_income = []
     n_years = fixed_params["n_years"]
     for i in range(n_years):
+        annual_income.append(current_annual_income)
+        current_annual_income *= (1.0 + annual_inflation[i])
         current_year_total_housing_cost = annual_homeowner_costs[i]
         # stop mortgage payments after principal and interest paid off, i is number of years paid so far
         if i < loan_term_years:
@@ -295,7 +300,7 @@ def run_simulation(fixed_params):
     renter_stock_assets, annual_total_renter_costs = run_renter_simulation(fixed_params, simulation_params, annual_total_homeowner_costs, annual_income)
 
     if is_debug:
-        print(f"Annual income: {fmt_dollars(annual_income)}")
+        print(f"Annual income: {annual_income}")
         print(f"End property value: {end_property_value}")
         print(f"Homeowner stock assets: {homeowner_stock_assets}")
         print(f"Annual total homeowner costs: {annual_total_homeowner_costs}")
