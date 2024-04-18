@@ -309,20 +309,29 @@ def run_simulation(fixed_params):
         print(f"Annual total renter costs: {annual_total_renter_costs}")
     
     # calculate both net worths at end of simulation
-    homeowner_net_worth, renter_net_worth = liquidate_all_assets(fixed_params["married_at_simulation_end"], simulation_params["property_price"],
+    property_price = simulation_params["property_price"]
+    homeowner_net_worth, renter_net_worth = liquidate_all_assets(fixed_params["married_at_simulation_end"], property_price,
         end_property_value, remaining_mortgage_balance, homeowner_stock_assets, renter_stock_assets)
     if is_debug:
-        print(f"Homeowner net worth: {fmt_dollars(homeowner_net_worth)}")
-        print(f"Renter net worth: {fmt_dollars(renter_net_worth)}")
+        print(f"Homeowner net worth after asset liquidation: {fmt_dollars(homeowner_net_worth)}")
+        print(f"Homeowner property purchase price: {fmt_dollars(property_price)}")
+        print(f"Renter net worth after asset liquidation: {fmt_dollars(renter_net_worth)}")
     
     # convert net worths to today's dollars using inflation values
     homeowner_net_worth_dollars_today = dollars_today(simulation_params, homeowner_net_worth)
     renter_net_worth_dollars_today = dollars_today(simulation_params, renter_net_worth)
+    end_property_value_dollars_today = dollars_today(simulation_params, end_property_value)
+    end_homeowner_stock_assets_dollars_today = dollars_today(simulation_params, homeowner_stock_assets)
+    end_renter_stock_assets_dollars_today = dollars_today(simulation_params, renter_stock_assets)
     if is_debug:
-        print(f"Homeowner net worth in today's dollars: {fmt_dollars(homeowner_net_worth_dollars_today)}")
-        print(f"Renter net worth in today's dollars: {fmt_dollars(renter_net_worth_dollars_today)}")
+        print(f"Homeowner net worth after asset liquidation in today's dollars: {fmt_dollars(homeowner_net_worth_dollars_today)}")
+        print(f"Homeowner property sale price at simulation end in today's dollars: {fmt_dollars(end_property_value_dollars_today)}")
+        print(f"Homeowner stock assets at simulation end in today's dollars: {fmt_dollars(end_homeowner_stock_assets_dollars_today)}")
+        print(f"Renter net worth after asset liquidation in today's dollars: {fmt_dollars(renter_net_worth_dollars_today)}")
+        print(f"Renter stock assets at simulation end in today's dollars: {fmt_dollars(end_renter_stock_assets_dollars_today)}")
     
-    return homeowner_net_worth_dollars_today, renter_net_worth_dollars_today
+    return homeowner_net_worth_dollars_today, property_price, end_property_value_dollars_today, end_homeowner_stock_assets_dollars_today, \
+        renter_net_worth_dollars_today, end_renter_stock_assets_dollars_today
 
 
 def main():
@@ -331,20 +340,36 @@ def main():
     n_simulations = fixed_params["n_simulations"]
     homeowner_net_worths = []
     renter_net_worths = []
+    property_prices = []
+    end_property_values = []
+    end_homeowner_stock_assets = []
+    end_renter_stock_assets = []
     for i in range(n_simulations):
-        homeowner_net_worth_dollars_today, renter_net_worth_dollars_today = run_simulation(fixed_params)
+        homeowner_net_worth_dollars_today, property_price, end_property_value_dollars_today, end_homeowner_stock_assets_dollars_today, \
+            renter_net_worth_dollars_today, end_renter_stock_assets_dollars_today = run_simulation(fixed_params)
         homeowner_net_worths.append(homeowner_net_worth_dollars_today)
         renter_net_worths.append(renter_net_worth_dollars_today)
+        property_prices.append(property_price)
+        end_property_values.append(end_property_value_dollars_today)
+        end_homeowner_stock_assets.append(end_homeowner_stock_assets_dollars_today)
+        end_renter_stock_assets.append(end_renter_stock_assets_dollars_today)
 
     # analysis across simulation runs showing statistics comparing homeowner vs renter
     homeowner_net_worth_mean = statistics.mean(homeowner_net_worths)
     renter_net_worth_mean = statistics.mean(renter_net_worths)
+    property_price_mean = statistics.mean(property_prices)
+    end_property_value_mean = statistics.mean(end_property_values)
+    end_homeowner_stock_assets_mean = statistics.mean(end_homeowner_stock_assets)
+    end_renter_stock_assets_mean = statistics.mean(end_renter_stock_assets)
     homeowner_beats_renter_rate = sum([(homeowner_net_worth > renter_net_worths[i]) for i, homeowner_net_worth in enumerate(homeowner_net_worths)]) / n_simulations
     print(f"Results across {n_simulations} simulations extended {fixed_params['n_years']} years into the future:")
     print(f"Being a homeowner beats being a renter (in net worth) in {round(homeowner_beats_renter_rate * 100.0, 2)}% of simulations")
-    print(f"Homeowner average net worth at simulation end in today's dollars: {fmt_dollars(homeowner_net_worth_mean)}")
-    print(f"Renter average net worth at simulation end in today's dollars: {fmt_dollars(renter_net_worth_mean)}")
-    # TODO print average home purchase price, end value, stock value in today's dollars; do we need to do all these in future dollars too? probably not, too much info
+    print(f"Homeowner average net worth after asset liquidation at simulation end in today's dollars: {fmt_dollars(homeowner_net_worth_mean)}")
+    print(f"Homeowner average property purchase price: {fmt_dollars(property_price_mean)}")
+    print(f"Homeowner average property sale price at simulation end in today's dollars: {fmt_dollars(end_property_value_mean)}")
+    print(f"Homeowner average stock assets at simulation end in today's dollars: {fmt_dollars(end_homeowner_stock_assets_mean)}")
+    print(f"Renter average net worth after asset liquidation at simulation end in today's dollars: {fmt_dollars(renter_net_worth_mean)}")
+    print(f"Renter average stock assets at simulation end in today's dollars: {fmt_dollars(end_renter_stock_assets_mean)}")
 
 
 if __name__=="__main__":
