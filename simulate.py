@@ -28,20 +28,25 @@ def parse_input(fixed_params):
         annual_income = input("What is your annual gross income? E.g. 123456.78.\n")
         if annual_income:
             annual_income = float(annual_income)
+            fixed_params["annual_income"] = annual_income
         initial_net_worth = input("What is your net worth?\n")
         if initial_net_worth:
             initial_net_worth = float(initial_net_worth)
+            fixed_params["initial_net_worth"] = initial_net_worth
         mortgage_rate = input("What is your mortgage rate percentage? E.g. 6.78.\n")
         if mortgage_rate:
             mortgage_rate = float(mortgage_rate) / 100.0
+            fixed_params["mortgage_rate"] = mortgage_rate
         property_price = input("What is your home's purchase price?\n")
         if property_price:
             property_price = float(property_price)
-
-        fixed_params["annual_income"] = annual_income
-        fixed_params["initial_net_worth"] = initial_net_worth
-        fixed_params["mortgage_rate"] = mortgage_rate
-        fixed_params["property_price"] = property_price
+            fixed_params["property_price"] = property_price
+        monthly_homeowner_cost = input("What is your average monthly homeowner cost other than mortgage, including HOA, insurance, taxes, repairs, etc.?\n")
+        annual_homeowner_cost = ""
+        if monthly_homeowner_cost:
+            monthly_homeowner_cost = float(monthly_homeowner_cost)
+            annual_homeowner_cost = monthly_homeowner_cost * MONTHS_PER_YEAR
+            fixed_params["annual_homeowner_cost"] = annual_homeowner_cost
 
 
 def fmt_dollars(amount):
@@ -292,7 +297,9 @@ def run_simulation(fixed_params):
     simulation_params = generate_params(fixed_params)
     is_debug = fixed_params["debug_mode"]
     if is_debug:
-        print("Running simulation with parameters:")
+        print("Running simulation with fixed params:")
+        print(json.dumps(fixed_params, indent=4))
+        print("and simulation-generated parameters:")
         print(json.dumps(simulation_params, indent=4))
     
     end_property_value, annual_total_homeowner_costs, remaining_mortgage_balance, annual_income, homeowner_stock_assets = run_homeowner_simulation(
