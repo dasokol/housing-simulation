@@ -371,10 +371,12 @@ def main():
     homeowner_beats_renter_rate = sum([(homeowner_net_worth > renter_net_worths[i]) for i, homeowner_net_worth in enumerate(homeowner_net_worths)]) / n_simulations
     print(f"Results across {n_simulations} simulations extended {fixed_params['n_years']} years into the future:")
     print(f"Being a homeowner beats being a renter (in net worth) in {round(homeowner_beats_renter_rate * 100.0, 2)}% of simulations")
+    print()
     print(f"Homeowner average net worth after asset liquidation at simulation end in today's dollars: {fmt_dollars(homeowner_net_worth_mean)}")
     print(f"Homeowner average property purchase price: {fmt_dollars(property_price_mean)}")
     print(f"Homeowner average property sale price at simulation end in today's dollars: {fmt_dollars(end_property_value_mean)}")
     print(f"Homeowner average stock assets at simulation end in today's dollars: {fmt_dollars(end_homeowner_stock_assets_mean)}")
+    print()
     print(f"Renter average net worth after asset liquidation at simulation end in today's dollars: {fmt_dollars(renter_net_worth_mean)}")
     print(f"Renter average stock assets at simulation end in today's dollars: {fmt_dollars(end_renter_stock_assets_mean)}")
 
