@@ -65,19 +65,23 @@ It's likely to be close enough for all intents and purposes, however.
 surprising number of natural phenomena. However, not everything fits this model, so the simulated parameters may not always reflect reality.
 In practice, the normal distribution is usually one the best tools to use in the absence of additional insights into the true data generating
 distribution.
-- Homeowner lives in same house throughout simulation period, while renters move occasionally to find better rental rates.
+- Homeowners live in the same house throughout simulation period, while renters move occasionally to find better rental rates.
 
 ## What ideas have I learned or reinforced with the simulation?
 
 - The greatest value of this is to compare the effects of changing various config parameters, not in predicting any specific future
 outcome. If used correctly, one learns about the relative importance of each paramenter, rather than determining net worth provided
 by homeownership vs. rentership.
-- The relative importance of exponential parameter compared with non-exponential ones is poignant. Raising the mean growth rate of
-housing prices, an exponential growth parameter, just 1% will typically have a much greater effect on net worth than large tax breaks
+- Any singular simulation results are likely not reliable, since the parametric data is randomly generated. However, aggregate results
+can be highly informative over many simulation iterations. For instance, if many iterations are run and 90% show it's a better choice to
+buy than rent, it's likely to be the case buying would also be a better choice in reality, provided the base parameter values to
+start the program are also grounded in reality.
+- The relative importance of exponential parameters compared with non-exponential ones is poignant. Raising the mean growth rate of
+housing prices, an exponential growth parameter, just 1% will typically have a much greater effect on net worth than large, one-time tax breaks
 worth tens of thousands of dollars. Likewise, if stocks outperform their historic growth by just 1%, then homeownership will rarely beat
 rentership.
 - Macroeconomic trends seem more important than anything else in predicting financial impact of the choice between owning a home and
-renting. In particular, the stock market and housing market matter the most.
+renting. In particular, the stock and housing markets seem to matter the most, as well as inflation trends.
 - It's worth shopping around a bit for a good mortgage rate, but the importance of this usually pales in comparison to that of the other
 exponential variables in the experiment. It's often better to get a percent extra housing price growth than the same magnitude reduction
 in mortgage rate and other mortgage parameters.
